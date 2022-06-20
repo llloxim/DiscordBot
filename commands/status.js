@@ -1,15 +1,11 @@
-const { VoiceConnectionStatus, AudioPlayerStatus } = require('@discordjs/voice');
+const { VoiceConnectionStatus} = require('@discordjs/voice');
 const { getVoiceConnection } = require('@discordjs/voice');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const ytdl = require('ytdl-core');
 const {
-	StreamType,
-	createAudioPlayer,
-	createAudioResource,
 	joinVoiceChannel,
 } = require('@discordjs/voice');
-const search = require("./search.js");
-
+const search = require("../music/search.js");
+const play = require("../music/play.js");
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('status')
@@ -28,14 +24,10 @@ module.exports = {
 		}
 		console.log(!value.includes("https://"))
 		if (!value.includes("https://")){
-			value = search(value);
+			search(connection, value);
+		} else {
+			play(connection, value)
 		}
-		const stream = ytdl(value, { filter: 'audioonly' });
-      	const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary, inlineVolume: true });
-      	resource.volume.setVolume(0.5);
-		const player = createAudioPlayer();
-		connection.subscribe(player);
-		player.play(resource);
 
 		connection.on(VoiceConnectionStatus.Ready, (oldState, newState) => {
 			console.log('Connection is in the Ready state!');
@@ -55,16 +47,6 @@ module.exports = {
 			}
 		});
 		
-		player.on(AudioPlayerStatus.Playing, () => {
-			console.log('The audio player has started playing!');
-		});
-		player.on('error', error => {
-			console.error(`Error: ${error.message} with resource ${error.resource.metadata.title}`);
-			player.play(getNextResource());
-		});
-		player.on(AudioPlayerStatus.Idle, () => {
-			player.play(getNextResource());
-		});
 		
 	},
 };
