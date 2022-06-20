@@ -8,13 +8,15 @@ const {
 	createAudioResource,
 	joinVoiceChannel,
 } = require('@discordjs/voice');
+const search = require("./search.js");
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('status')
 		.setDescription('join call')
-		.addStringOption(option => option.setName('input').setDescription('song name')),
+		.addStringOption(option => option.setName('input').setDescription('song name').setRequired(true)),
 	async execute(interaction) {
+		const value = interaction.options.getString('input');
 		var myVoiceChannel = interaction.member.voice.channel;
 		var connection = getVoiceConnection(myVoiceChannel.guild.id);
 		if (!connection){
@@ -24,21 +26,16 @@ module.exports = {
 				adapterCreator: myVoiceChannel.guild.voiceAdapterCreator,
 				});
 		}
-		const stream = ytdl('https://www.youtube.com/watch?v=6NYeMlyBP4M', { filter: 'audioonly' });
+		console.log(!value.includes("https://"))
+		if (!value.includes("https://")){
+			value = search(value);
+		}
+		const stream = ytdl(value, { filter: 'audioonly' });
       	const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary, inlineVolume: true });
       	resource.volume.setVolume(0.5);
 		const player = createAudioPlayer();
-
 		connection.subscribe(player);
 		player.play(resource);
-/* 		const player = CreateAudioPlayer(myVoiceChannel.guild.id);
-		const resource = createAudioResource('/home/user/voice/music.mp3', {
-			metadata: {
-				title: 'A good song!',
-			},
-		});
-		player.play(resource);
-		connection.subscribe(player); */
 
 		connection.on(VoiceConnectionStatus.Ready, (oldState, newState) => {
 			console.log('Connection is in the Ready state!');
